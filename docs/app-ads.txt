@@ -1,0 +1,11 @@
+# app-ads.txt - authorized digital sellers for mobile apps
+# App:    Meeple Clock (com.ozsoffy.meepleclock)
+# Owner:  Oz Soffy
+# Spec:   https://iabtechlab.com/ads-txt/
+# AdMob:  https://support.google.com/admob/answer/9363762
+#
+# Line format: <ad system domain>, <publisher id>, <DIRECT|RESELLER>, <certification authority id>
+# f08c47fec0942fa0 is Google's own certification authority ID - the same for every
+# publisher, so it is not a secret and must not be changed.
+
+google.com, pub-2057702522130976, DIRECT, f08c47fec0942fa0

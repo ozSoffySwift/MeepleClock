@@ -43,6 +43,15 @@ design history.
 App Store-ready marketing assets (6.9" screenshots at 1320x2868, app icon exports, and the
 submission checklist) live in [Marketing/](Marketing).
 
+## Marketing site
+
+The public landing page — the one linked from the App Store listing — is a static site in
+[docs/](docs), served by GitHub Pages at
+**https://ozsoffyswift.github.io/MeepleClock/**. It also serves the privacy policy and the
+AdMob `app-ads.txt`. Setup steps, including the publisher ID and the domain-root requirement
+for `app-ads.txt`, are in
+[Marketing/GitHubPages-AdMob.md](Marketing/GitHubPages-AdMob.md).
+
 ## Tech stack
 
 - Swift & SwiftUI only (no UIKit view controllers)
