@@ -17,21 +17,22 @@ docs/
 
 ---
 
-## 1. Turn on GitHub Pages
+## 1. GitHub Pages — done
 
-**GitHub → ozSoffySwift/MeepleClock → Settings → Pages**
+Pages is enabled on this repo and deploying from `main`, folder `/docs`:
 
 | Field | Value |
 |---|---|
-| Source | **Deploy from a branch** |
+| Source | Deploy from a branch |
 | Branch | `main` |
-| Folder | **`/docs`** |
+| Folder | `/docs` |
 
-Save. The first build takes a minute or two, then the site is live at:
+The site is live at **https://ozsoffyswift.github.io/MeepleClock/**, and the privacy policy
+at **https://ozsoffyswift.github.io/MeepleClock/privacy.html**.
 
-**https://ozsoffyswift.github.io/MeepleClock/**
-
-No workflow file is needed — the branch/folder option covers it.
+No workflow file is involved — the branch/folder option covers it, and every push to `main`
+that touches `docs/` redeploys automatically a minute or so later. The settings live under
+**Settings → Pages** if you ever need to change the branch or add a custom domain.
 
 ## 2. Fill in the App Store link
 
