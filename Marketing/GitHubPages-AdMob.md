@@ -34,15 +34,10 @@ No workflow file is involved — the branch/folder option covers it, and every p
 that touches `docs/` redeploys automatically a minute or so later. The settings live under
 **Settings → Pages** if you ever need to change the branch or add a custom domain.
 
-## 2. Fill in the App Store link
+## 2. App Store link — done
 
-`docs/index.html` has two buttons pointing at the placeholder `APP_STORE_URL`. Once you have
-the listing URL (App Store Connect → App Information → the Apple ID, or just open the app's
-page on the web and copy the address), replace both in one go:
-
-```sh
-sed -i '' 's|APP_STORE_URL|https://apps.apple.com/app/id1234567890|g' docs/index.html
-```
+Both download buttons on `docs/index.html` point at the live listing,
+**https://apps.apple.com/app/id6787948106**.
 
 ## 3. AdMob publisher ID — done
 
@@ -80,24 +75,20 @@ Play or the App Store."* So whichever host ends up serving the file must be the 
 enter as the app's website on the App Store listing — the two have to match character for
 character, down to the subdomain.
 
-### Option A — a user site repo (free, 5 minutes, recommended)
+### Option A — a user site repo — done, this is the live setup
 
-Create a repo named exactly **`ozSoffySwift.github.io`**, enable Pages on it, and put
-`app-ads.txt` at its root. That serves `https://ozsoffyswift.github.io/app-ads.txt`.
+**[ozSoffySwift/ozSoffySwift.github.io](https://github.com/ozSoffySwift/ozSoffySwift.github.io)**
+is a separate public repo whose Pages site is the domain root. It holds:
 
-```sh
-# from this repo
-mkdir -p ../ozSoffySwift.github.io && cd ../ozSoffySwift.github.io
-cp ../MeepleClock/docs/app-ads.txt .
-git init && git add app-ads.txt && git commit -m "Add app-ads.txt"
-gh repo create ozSoffySwift.github.io --public --source=. --push
-```
+- `app-ads.txt` — served at **https://ozsoffyswift.github.io/app-ads.txt**, which is the URL
+  AdMob crawls. **Keep it identical to `docs/app-ads.txt` here**; if you ever add another ad
+  network, update both.
+- `index.html` — redirects anyone landing on `https://ozsoffyswift.github.io/` on to the
+  Meeple Clock site at `/MeepleClock/`.
 
-Then enable Pages on that repo (Settings → Pages → branch `main`, folder `/`).
-
-You can also move the whole marketing site there if you would rather the App Store link be
-`https://ozsoffyswift.github.io/` — copy the contents of `docs/` into that repo instead of
-just `app-ads.txt`.
+Because AdMob drops the path and only uses the hostname, the App Store Marketing URL can stay
+`https://ozsoffyswift.github.io/MeepleClock/` — the crawler reduces it to
+`ozsoffyswift.github.io` and finds the file at that root.
 
 ### Option B — a custom domain
 
@@ -107,7 +98,11 @@ If you point a domain (e.g. `meepleclock.app`) at this repo's Pages site via
 
 ## 5. Point AdMob and the App Store at it
 
-1. **App Store Connect → App Information → Marketing URL**: the marketing page
+1. ⚠️ **App Store Connect → your app → the version page → Marketing URL**: the marketing page.
+   **This is currently empty on the live listing**, and AdMob refuses to verify an app
+   whose store listing has no developer website. Marketing URL is version metadata, so it
+   may only become editable when you prepare the next version.
+   The marketing page
    (`https://ozsoffyswift.github.io/MeepleClock/`). This is the link that shows up on the
    store listing as the app's website.
 2. **App Store Connect → App Information → Privacy Policy URL**:
