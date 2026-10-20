@@ -5,559 +5,758 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Meeple Clock — Board Game Timer for iPhone</title>
 <meta name="description" content="Meeple Clock is a chess-clock style board game timer for up to 6 players. Put your iPhone flat on the table, tap your wedge to pass the turn, and find out who is really the slow one.">
+<meta name="theme-color" content="#0A0B0D">
 <link rel="canonical" href="https://ozsoffyswift.github.io/MeepleClock/">
 
-<!-- Social preview -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="Meeple Clock — Board Game Timer for iPhone">
 <meta property="og:description" content="A chess-clock style board game timer for up to 6 players. Tap your wedge to pass the turn.">
 <meta property="og:url" content="https://ozsoffyswift.github.io/MeepleClock/">
 <meta property="og:image" content="https://ozsoffyswift.github.io/MeepleClock/assets/icon-512.png">
-<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:card" content="summary">
+<meta name="apple-itunes-app" content="app-id=6787948106">
 
 <link rel="icon" href="assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
 
+<!-- Fredoka (headings) + Nunito (body): rounded and playful, the web cousins of the
+     SF Rounded face the app itself uses. ui-rounded stays first in the fallback stack. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+
 <style>
+  /* ---------- Tokens (brand values from MeeplePalette.swift) ---------- */
   :root{
-    /* Straight from the app's MeeplePalette.swift */
     --bg:#0A0B0D;
     --bg-elevated:#111214;
     --card:#18191C;
+    --card-hover:#1D1E22;
     --control:#232427;
     --silver:#C7CCD1;
     --silver-dark:#8A8F94;
     --text:#F2F4F6;
-    --text-secondary:#8A8F94;
-    --border:rgba(199,204,209,.18);
-    --blue:#3B9EFF;
-    --red:#FF4D4D;
-    --yellow:#FFD60A;
-    --green:#34D399;
-    --maxw:1080px;
-    --radius:18px;
+    --muted:#9BA1A7;            /* 7.5:1 on --bg, 6.7:1 on --card */
+    --border:rgba(199,204,209,.14);
+    --border-strong:rgba(199,204,209,.28);
+
+    /* Meeple gradients: [light stop, dark stop] */
+    --g-blue:linear-gradient(135deg,#9FD8FF,#3B9EFF);
+    --g-red:linear-gradient(135deg,#FFA3A3,#FF4D4D);
+    --g-yellow:linear-gradient(135deg,#FFF3A3,#FFD60A);
+    --g-green:linear-gradient(135deg,#B9F6CA,#34D399);
+    --g-purple:linear-gradient(135deg,#E0B3FF,#A855F7);
+    --g-pink:linear-gradient(135deg,#FFAFDD,#FF5CA8);
+    --g-orange:linear-gradient(135deg,#FFD199,#FF9F1C);
+    --g-teal:linear-gradient(135deg,#A0F0E8,#14C7BE);
+    --g-silver:linear-gradient(135deg,#C7CCD1,#8A8F94);
+
+    --font-head:"Fredoka",ui-rounded,"SF Pro Rounded",-apple-system,system-ui,sans-serif;
+    --font-body:"Nunito",ui-rounded,"SF Pro Rounded",-apple-system,system-ui,sans-serif;
+
+    --maxw:1120px;
+    --r-lg:24px;
+    --r-md:16px;
+    --space-section:clamp(72px,10vw,120px);
+    --ease:cubic-bezier(.2,.7,.2,1);
   }
 
   *{box-sizing:border-box}
-
-  html{scroll-behavior:smooth}
-
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
   body{
-    margin:0;
-    background:var(--bg);
-    color:var(--text);
-    /* ui-rounded gives SF Rounded on Apple devices — the same face the app uses. */
-    font-family:ui-rounded,-apple-system,BlinkMacSystemFont,"SF Pro Rounded","Segoe UI",system-ui,sans-serif;
-    font-size:17px;
-    line-height:1.6;
-    -webkit-font-smoothing:antialiased;
-    overflow-x:hidden;
+    margin:0;background:var(--bg);color:var(--text);
+    font-family:var(--font-body);font-size:17px;line-height:1.6;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;
   }
-
+  img{max-width:100%;height:auto;display:block}
   a{color:var(--silver)}
+  h1,h2,h3{font-family:var(--font-head);font-weight:600;letter-spacing:-.01em;margin:0;text-wrap:balance}
+  p,blockquote{text-wrap:pretty}
+
+  :focus-visible{outline:2px solid var(--silver);outline-offset:3px;border-radius:8px}
 
   .wrap{max-width:var(--maxw);margin:0 auto;padding:0 20px}
+
+  .skip{
+    position:absolute;left:12px;top:-60px;z-index:100;padding:10px 16px;border-radius:10px;
+    background:var(--silver);color:var(--bg);font-weight:700;text-decoration:none;
+  }
+  .skip:focus{top:12px}
+
+  .visually-hidden{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:10px;
+    min-height:52px;padding:0 24px;border-radius:14px;
+    font-family:var(--font-body);font-size:16px;font-weight:800;text-decoration:none;
+    border:1px solid transparent;cursor:pointer;
+    transition:transform .2s var(--ease),background-color .2s var(--ease),border-color .2s var(--ease),box-shadow .2s var(--ease);
+  }
+  .btn svg{width:18px;height:18px;flex-shrink:0}
+  .btn-primary{background:var(--g-silver);color:var(--bg);box-shadow:0 8px 24px rgba(199,204,209,.12)}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(199,204,209,.22)}
+  .btn-ghost{background:var(--card);color:var(--text);border-color:var(--border-strong)}
+  .btn-ghost:hover{background:var(--card-hover);border-color:var(--silver-dark)}
+  .btn-sm{min-height:44px;padding:0 16px;font-size:14px;border-radius:12px}
 
   /* ---------- Header ---------- */
   header{
     position:sticky;top:0;z-index:50;
-    background:rgba(10,11,13,.82);
-    backdrop-filter:saturate(180%) blur(14px);
-    -webkit-backdrop-filter:saturate(180%) blur(14px);
+    background:rgba(10,11,13,.78);
+    backdrop-filter:saturate(180%) blur(16px);-webkit-backdrop-filter:saturate(180%) blur(16px);
     border-bottom:1px solid var(--border);
   }
-  .nav{display:flex;align-items:center;gap:12px;height:60px}
-  .nav img{width:30px;height:30px;border-radius:8px}
-  .nav strong{font-size:16px;letter-spacing:-.01em}
-  .nav nav{margin-left:auto;display:flex;gap:22px;font-size:14px}
-  .nav nav a{color:var(--text-secondary);text-decoration:none}
-  .nav nav a:hover{color:var(--text)}
-  @media (max-width:640px){.nav nav{gap:16px}.nav nav a.hide-sm{display:none}}
+  .nav{display:flex;align-items:center;gap:8px;height:68px}
+  .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);margin-right:auto;min-height:44px}
+  .brand img{width:32px;height:32px;border-radius:9px}
+  .brand span{font-family:var(--font-head);font-weight:600;font-size:18px}
+  .nav-links{display:flex;gap:4px;margin-right:8px}
+  .nav-links a{
+    display:inline-flex;align-items:center;min-height:44px;padding:0 12px;border-radius:10px;
+    color:var(--muted);text-decoration:none;font-size:15px;font-weight:600;
+    transition:color .2s var(--ease),background-color .2s var(--ease);
+  }
+  .nav-links a:hover{color:var(--text);background:var(--card)}
+  @media (max-width:760px){.nav-links{display:none}}
 
   /* ---------- Hero ---------- */
-  .hero{position:relative;padding:72px 0 40px;text-align:center;overflow:hidden}
-  /* The four meeple colors bleeding in behind the title, like the app icon's pie. */
+  .hero{position:relative;padding:clamp(48px,8vw,96px) 0 var(--space-section);overflow:hidden}
+  /* The four quadrant colours of the app icon, glowing faintly behind the hero. */
   .hero::before{
-    content:"";position:absolute;inset:-40% 0 auto;height:620px;pointer-events:none;
+    content:"";position:absolute;inset:-10% -10% auto;height:120%;pointer-events:none;z-index:0;
     background:
-      radial-gradient(42% 46% at 28% 34%, rgba(255,77,77,.16), transparent 70%),
-      radial-gradient(42% 46% at 72% 32%, rgba(52,211,153,.15), transparent 70%),
-      radial-gradient(46% 42% at 50% 62%, rgba(59,158,255,.14), transparent 70%),
-      radial-gradient(40% 40% at 62% 18%, rgba(255,214,10,.10), transparent 70%);
-    filter:blur(10px);
+      radial-gradient(30% 34% at 70% 28%, rgba(52,211,153,.16), transparent 70%),
+      radial-gradient(30% 34% at 88% 52%, rgba(59,158,255,.16), transparent 70%),
+      radial-gradient(28% 32% at 64% 70%, rgba(255,77,77,.13), transparent 70%),
+      radial-gradient(26% 30% at 50% 12%, rgba(255,214,10,.08), transparent 70%);
   }
-  .hero > *{position:relative}
-  .hero .icon{
-    width:112px;height:112px;border-radius:26px;
-    box-shadow:0 18px 46px rgba(0,0,0,.6);
-    border:1px solid var(--border);
+  .hero-grid{
+    position:relative;z-index:1;
+    display:grid;grid-template-columns:1.05fr 1fr;gap:48px;align-items:center;
   }
-  h1{
-    font-size:clamp(2.6rem,7vw,4.2rem);
-    line-height:1.02;letter-spacing:-.03em;font-weight:800;
-    margin:22px 0 6px;
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:10px;padding:6px 14px 6px 6px;border-radius:999px;
+    background:var(--card);border:1px solid var(--border);color:var(--muted);
+    font-size:14px;font-weight:700;
   }
-  .kicker{
-    display:inline-block;margin-top:18px;padding:5px 13px;border-radius:999px;
-    background:var(--control);border:1px solid var(--border);
-    font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--text-secondary);
+  .eyebrow img{width:28px;height:28px;border-radius:8px}
+  .hero h1{
+    font-size:clamp(2.9rem,7vw,5rem);line-height:1;letter-spacing:-.025em;font-weight:700;
+    margin:22px 0 18px;
   }
-  .tagline{
-    font-size:clamp(1.05rem,2.4vw,1.35rem);
-    color:var(--silver);font-weight:600;margin:0 0 14px;
+  .hero h1 .grad{
+    background:linear-gradient(90deg,#FFD60A 0%,#34D399 35%,#3B9EFF 65%,#FF4D4D 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
   }
-  .lede{
-    max-width:620px;margin:0 auto;color:var(--text-secondary);font-size:1.02rem;
+  .lede{font-size:clamp(1.05rem,1.8vw,1.22rem);color:var(--muted);max-width:520px;margin:0}
+  .cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:32px}
+  .facts{display:flex;flex-wrap:wrap;gap:8px 20px;margin:28px 0 0;padding:0;list-style:none;color:var(--muted);font-size:15px;font-weight:600}
+  .facts li{display:flex;align-items:center;gap:8px}
+  .facts svg{width:18px;height:18px;color:var(--silver)}
+
+  .hero-phones{position:relative;height:clamp(440px,52vw,600px)}
+  .phone{
+    position:absolute;width:clamp(200px,24vw,276px);
+    border-radius:clamp(26px,3vw,38px);overflow:hidden;
+    border:1px solid var(--border-strong);
+    box-shadow:0 40px 80px rgba(0,0,0,.65),0 0 0 6px #050506;
+  }
+  .phone-back{right:2%;top:6%;transform:rotate(6deg);opacity:.92}
+  .phone-front{left:6%;top:0;transform:rotate(-4deg)}
+
+  @media (max-width:960px){
+    .hero-grid{grid-template-columns:1fr;text-align:center}
+    .lede{margin:0 auto}
+    .cta,.facts{justify-content:center}
+    .hero-phones{height:clamp(380px,100vw,520px);max-width:520px;margin:8px auto 0;width:100%}
+    .phone{width:clamp(170px,44vw,240px)}
+    .phone-front{left:8%}
+    .phone-back{right:8%}
   }
 
-  /* ---------- Buttons ---------- */
-  .cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:30px 0 8px}
-  .btn{
-    display:inline-flex;align-items:center;gap:9px;
-    padding:13px 24px;border-radius:14px;
-    font-size:15px;font-weight:700;text-decoration:none;
-    border:1px solid transparent;transition:transform .15s ease,opacity .15s ease;
-  }
-  .btn:hover{transform:translateY(-2px)}
-  .btn-primary{
-    background:linear-gradient(135deg,#C7CCD1,#8A8F94);
-    color:#0A0B0D;
-  }
-  .btn-secondary{
-    background:var(--card);color:var(--text);border-color:var(--border);
-  }
-  .btn svg{width:17px;height:17px;fill:currentColor}
-
-  /* ---------- Hero phones ---------- */
-  .phones{
-    display:flex;justify-content:center;align-items:flex-end;gap:clamp(10px,3vw,28px);
-    margin:46px auto 0;max-width:820px;
-  }
-  .phones img{
-    width:clamp(120px,27vw,230px);border-radius:22px;
-    border:1px solid var(--border);
-    box-shadow:0 26px 60px rgba(0,0,0,.62);
-    display:block;
-  }
-  .phones img:nth-child(2){margin-bottom:26px}
+  /* ---------- Meeple colour strip ---------- */
+  .meeples{display:flex;justify-content:center;gap:clamp(8px,2vw,18px);padding:0 0 var(--space-section);flex-wrap:wrap}
+  .meeples svg{width:clamp(26px,4vw,40px);height:auto}
 
   /* ---------- Sections ---------- */
-  section{padding:68px 0;border-top:1px solid var(--border)}
-  section:first-of-type{border-top:0}
-  h2{
-    font-size:clamp(1.7rem,3.6vw,2.3rem);letter-spacing:-.02em;font-weight:800;
-    margin:0 0 10px;text-align:center;
+  section{padding:var(--space-section) 0}
+  .section-head{text-align:center;max-width:660px;margin:0 auto 52px}
+  .section-head .kicker{
+    display:block;font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:12px;
   }
-  .sub{text-align:center;color:var(--text-secondary);max-width:620px;margin:0 auto 42px}
+  .section-head h2{font-size:clamp(2rem,4.4vw,3rem);line-height:1.08}
+  .section-head p{color:var(--muted);margin:14px 0 0;font-size:1.06rem}
 
-  /* ---------- Feature cards ---------- */
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:16px}
-  .card{
-    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
-    padding:24px;
+  /* ---------- Problem statement ---------- */
+  .problem{padding-top:0}
+  .problem blockquote{
+    margin:0 auto;max-width:860px;text-align:center;
+    font-family:var(--font-head);font-weight:500;line-height:1.25;
+    font-size:clamp(1.6rem,3.6vw,2.5rem);color:var(--text);
   }
-  .card h3{margin:0 0 7px;font-size:1.06rem;letter-spacing:-.01em}
-  .card p{margin:0;color:var(--text-secondary);font-size:.95rem}
-  .chip{
-    width:38px;height:38px;border-radius:11px;margin-bottom:15px;
-    display:grid;place-items:center;font-size:19px;
-    background:var(--control);border:1px solid var(--border);
+  .problem blockquote em{font-style:normal;color:var(--muted)}
+
+  /* ---------- Bento features ---------- */
+  .bento{
+    display:grid;gap:16px;
+    grid-template-columns:repeat(4,1fr);
+    grid-auto-rows:minmax(200px,auto);
+  }
+  .tile{
+    position:relative;overflow:hidden;
+    background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);
+    padding:26px;display:flex;flex-direction:column;
+    transition:border-color .25s var(--ease),background-color .25s var(--ease);
+  }
+  .tile:hover{border-color:var(--border-strong);background:var(--card-hover)}
+  .tile h3{font-size:1.25rem;margin:18px 0 8px}
+  .tile p{margin:0;color:var(--muted);font-size:.98rem}
+  .icon{
+    width:46px;height:46px;border-radius:14px;flex-shrink:0;
+    display:grid;place-items:center;color:var(--bg);
+  }
+  .icon svg{width:22px;height:22px}
+  .i-blue{background:var(--g-blue)} .i-red{background:var(--g-red)} .i-yellow{background:var(--g-yellow)}
+  .i-green{background:var(--g-green)} .i-purple{background:var(--g-purple)} .i-pink{background:var(--g-pink)}
+  .i-orange{background:var(--g-orange)} .i-teal{background:var(--g-teal)}
+
+  .tile-hero{grid-column:span 2;grid-row:span 2;padding-bottom:0}
+  .tile-hero h3{font-size:clamp(1.5rem,2.6vw,2rem)}
+  .tile-hero p{max-width:380px;font-size:1.04rem}
+  .tile-hero .shot{
+    margin:28px auto 0;width:min(300px,78%);
+    border-radius:28px 28px 0 0;border:1px solid var(--border-strong);border-bottom:0;
+    box-shadow:0 -10px 50px rgba(59,158,255,.18);
+    /* Show only the top of the screen so the tile doesn't stretch every bento row. */
+    height:clamp(240px,26vw,300px);object-fit:cover;object-position:top;
+  }
+  .tile-wide{grid-column:span 2}
+  .tile-wide .row{display:flex;gap:20px;align-items:flex-start}
+  .tile-wide .row h3{margin-top:0}
+
+  .seats{display:flex;gap:6px;margin-top:auto;padding-top:18px}
+  .seats span{width:26px;height:26px;border-radius:8px}
+
+  @media (max-width:960px){
+    .bento{grid-template-columns:repeat(2,1fr)}
+    .tile-hero{grid-column:span 2;grid-row:span 1}
+  }
+  @media (max-width:600px){
+    .bento{grid-template-columns:1fr}
+    .tile-hero,.tile-wide{grid-column:span 1}
+    .tile-wide .row{flex-direction:column;gap:0}
+    .tile-wide .row h3{margin-top:18px}
   }
 
   /* ---------- Modes ---------- */
-  .modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px}
+  .modes{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   .mode{
-    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
-    padding:28px;position:relative;overflow:hidden;
+    position:relative;overflow:hidden;
+    background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:32px;
   }
-  .mode::after{content:"";position:absolute;inset:0 0 auto;height:3px}
-  .mode.up::after{background:linear-gradient(90deg,#9FD8FF,#3B9EFF)}
-  .mode.down::after{background:linear-gradient(90deg,#FFA3A3,#FF4D4D)}
-  .mode .label{
-    font-size:11px;letter-spacing:.12em;text-transform:uppercase;
-    color:var(--text-secondary);margin-bottom:8px;
-  }
-  .mode h3{margin:0 0 10px;font-size:1.4rem;letter-spacing:-.02em}
-  .mode p{margin:0 0 14px;color:var(--text-secondary);font-size:.96rem}
-  .mode ul{margin:0;padding-left:18px;color:var(--text-secondary);font-size:.92rem}
-  .mode li{margin-bottom:5px}
+  .mode::before{content:"";position:absolute;inset:0 0 auto;height:4px}
+  .mode.up::before{background:var(--g-blue)}
+  .mode.down::before{background:var(--g-red)}
+  .mode-head{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+  .mode h3{font-size:1.6rem}
+  .mode .tag{font-size:13px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .mode p{color:var(--muted);margin:0 0 18px}
+  .mode ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+  .mode li{display:flex;gap:10px;color:var(--text);font-size:.98rem}
+  .mode li svg{width:20px;height:20px;flex-shrink:0;margin-top:3px;color:var(--silver)}
+  @media (max-width:760px){.modes{grid-template-columns:1fr}.mode{padding:26px}}
 
   /* ---------- Steps ---------- */
-  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:26px;text-align:center}
-  .step-n{
-    width:44px;height:44px;margin:0 auto 14px;border-radius:50%;
-    display:grid;place-items:center;font-weight:800;font-size:18px;color:#0A0B0D;
-    background:linear-gradient(135deg,#C7CCD1,#8A8F94);
+  .steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;counter-reset:step}
+  .steps li{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:28px;
+    counter-increment:step;
   }
-  .steps h3{margin:0 0 6px;font-size:1.05rem}
-  .steps p{margin:0;color:var(--text-secondary);font-size:.94rem}
+  .steps li::before{
+    content:counter(step);display:grid;place-items:center;width:44px;height:44px;border-radius:50%;
+    background:var(--g-silver);color:var(--bg);font-family:var(--font-head);font-weight:700;font-size:20px;
+    margin-bottom:18px;
+  }
+  .steps h3{font-size:1.2rem;margin-bottom:6px}
+  .steps p{margin:0;color:var(--muted)}
+  @media (max-width:760px){.steps{grid-template-columns:1fr}}
 
-  /* ---------- Gallery ---------- */
-  /* Five shots: a clean 5-up on desktop, 3+2 on tablets, 2-up on phones —
-     explicit counts rather than auto-fit, which stranded the fifth on its own row. */
-  .gallery{display:grid;grid-template-columns:repeat(5,1fr);gap:18px}
-  @media (max-width:900px){.gallery{grid-template-columns:repeat(3,1fr);gap:22px}}
-  @media (max-width:560px){.gallery{grid-template-columns:repeat(2,1fr)}}
-  .shot img{
-    width:100%;border-radius:16px;border:1px solid var(--border);
-    box-shadow:0 14px 34px rgba(0,0,0,.5);display:block;
+  /* ---------- Screenshots carousel ---------- */
+  .carousel{position:relative}
+  .track{
+    display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;
+    padding:8px 20px 24px;margin:0 -20px;scrollbar-width:none;
+    scroll-padding:0 20px;
   }
-  .shot p{
-    margin:12px 2px 0;font-size:.85rem;color:var(--text-secondary);text-align:center;
+  .track::-webkit-scrollbar{display:none}
+  .track figure{flex:0 0 clamp(220px,24vw,250px);margin:0;scroll-snap-align:start}
+  .track img{
+    border-radius:26px;border:1px solid var(--border-strong);
+    box-shadow:0 20px 44px rgba(0,0,0,.5);
   }
+  .track figcaption{margin-top:14px;text-align:center}
+  .track figcaption strong{display:block;font-family:var(--font-head);font-weight:600;font-size:1.05rem}
+  .track figcaption span{color:var(--muted);font-size:.92rem}
+  .carousel-controls{display:flex;justify-content:center;gap:12px;margin-top:8px}
+  .carousel-controls button{
+    width:48px;height:48px;border-radius:50%;display:grid;place-items:center;cursor:pointer;
+    background:var(--card);color:var(--text);border:1px solid var(--border-strong);
+    transition:background-color .2s var(--ease),opacity .2s var(--ease);
+  }
+  .carousel-controls button:hover:not(:disabled){background:var(--card-hover)}
+  .carousel-controls button:disabled{opacity:.35;cursor:default}
+  .carousel-controls svg{width:22px;height:22px}
+  /* No JS → no controls; the track is still swipeable and keyboard-scrollable. */
+  html:not(.js) .carousel-controls{display:none}
 
-  /* ---------- Spec table ---------- */
-  .specs{
-    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
-    overflow:hidden;
-  }
-  .specs div{
-    display:flex;gap:16px;padding:14px 22px;border-top:1px solid var(--border);
-    font-size:.95rem;
-  }
-  .specs div:first-child{border-top:0}
-  .specs dt{margin:0;color:var(--text-secondary);min-width:160px;flex-shrink:0}
+  /* ---------- About / developer ---------- */
+  .about-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;align-items:start}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:30px}
+  .panel h3{font-size:1.35rem;margin-bottom:6px}
+  .panel > p{color:var(--muted);margin:0 0 20px}
+  .specs{margin:0;display:grid}
+  .specs div{display:grid;grid-template-columns:150px 1fr;gap:12px;padding:12px 0;border-top:1px solid var(--border);font-size:.97rem}
+  .specs dt{color:var(--muted)}
   .specs dd{margin:0}
-  @media (max-width:520px){
-    .specs div{flex-direction:column;gap:2px}
-    .specs dt{min-width:0;font-size:.82rem}
+  @media (max-width:520px){.specs div{grid-template-columns:1fr;gap:0}.specs dt{font-size:.88rem}}
+
+  .dev-top{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+  .avatar{
+    width:64px;height:64px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;
+    background:var(--g-silver);color:var(--bg);font-family:var(--font-head);font-weight:700;font-size:24px;
+  }
+  .dev-top .role{color:var(--muted);font-size:.92rem;margin:2px 0 0}
+  .dev p{color:var(--muted);margin:0 0 14px}
+  .dev .links{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+
+  .privacy{
+    margin-top:16px;display:flex;gap:20px;align-items:center;
+    background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:26px 30px;
+  }
+  .privacy h3{font-size:1.2rem;margin-bottom:4px}
+  .privacy p{margin:0;color:var(--muted);font-size:.97rem}
+  .privacy .btn{margin-left:auto;flex-shrink:0}
+  @media (max-width:860px){
+    .about-grid{grid-template-columns:1fr}
+    .privacy{flex-direction:column;align-items:flex-start}
+    .privacy .btn{margin-left:0}
   }
 
-  /* ---------- Developer ---------- */
-  .dev{
-    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
-    padding:34px;display:flex;gap:28px;align-items:flex-start;
+  /* ---------- Final CTA ---------- */
+  .final{
+    position:relative;overflow:hidden;text-align:center;
+    border-radius:32px;padding:clamp(48px,8vw,88px) 24px;
+    background:var(--bg-elevated);border:1px solid var(--border);
   }
-  .dev .avatar{
-    width:72px;height:72px;border-radius:50%;flex-shrink:0;
-    display:grid;place-items:center;font-size:26px;font-weight:800;color:#0A0B0D;
-    background:linear-gradient(135deg,#C7CCD1,#8A8F94);
+  .final::before{
+    content:"";position:absolute;inset:0;pointer-events:none;opacity:.22;
+    background:
+      radial-gradient(40% 60% at 0% 0%, #FFD60A, transparent 70%),
+      radial-gradient(40% 60% at 100% 0%, #34D399, transparent 70%),
+      radial-gradient(40% 60% at 0% 100%, #FF4D4D, transparent 70%),
+      radial-gradient(40% 60% at 100% 100%, #3B9EFF, transparent 70%);
   }
-  .dev h3{margin:0 0 4px;font-size:1.25rem;letter-spacing:-.01em}
-  .dev .role{margin:0 0 14px;color:var(--text-secondary);font-size:.9rem}
-  .dev p{color:var(--text-secondary);font-size:.96rem}
-  .dev .links{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
-  .dev .links a{
-    display:inline-flex;align-items:center;gap:7px;
-    padding:9px 16px;border-radius:11px;background:var(--control);
-    border:1px solid var(--border);color:var(--text);
-    text-decoration:none;font-size:.88rem;font-weight:600;
-  }
-  .dev .links a:hover{border-color:var(--silver-dark)}
-  .dev .links svg{width:15px;height:15px;fill:currentColor}
-  @media (max-width:640px){.dev{flex-direction:column;padding:26px;gap:18px}}
-
-  /* ---------- Privacy banner ---------- */
-  .privacy-note{
-    text-align:center;background:var(--card);border:1px solid var(--border);
-    border-radius:var(--radius);padding:34px 26px;
-  }
-  .privacy-note h2{margin-bottom:8px}
+  .final > *{position:relative}
+  .final-wrap{padding-bottom:24px}
+  .final img{width:96px;height:96px;border-radius:22px;margin:0 auto 22px;box-shadow:0 18px 40px rgba(0,0,0,.6)}
+  .final h2{font-size:clamp(2.2rem,5vw,3.4rem)}
+  .final p{color:var(--muted);margin:12px auto 0;max-width:460px}
+  .final .cta{justify-content:center}
 
   /* ---------- Footer ---------- */
-  footer{
-    border-top:1px solid var(--border);padding:38px 0 48px;
-    color:var(--text-secondary);font-size:.86rem;text-align:center;
+  footer{padding:48px 0 56px;color:var(--muted);font-size:.9rem;text-align:center}
+  footer nav{display:flex;gap:4px 8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+  footer nav a{
+    display:inline-flex;align-items:center;min-height:44px;padding:0 10px;
+    color:var(--muted);text-decoration:none;font-weight:600;border-radius:8px;
   }
-  footer nav{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
-  footer nav a{color:var(--text-secondary);text-decoration:none}
   footer nav a:hover{color:var(--text)}
+  footer p{margin:0}
+
+  /* ---------- Scroll reveal (progressive: only with JS, never under reduced motion) ---------- */
+  .js .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s var(--ease),transform .6s var(--ease)}
+  .js .reveal.in{opacity:1;transform:none}
 
   @media (prefers-reduced-motion:reduce){
     html{scroll-behavior:auto}
-    .btn:hover{transform:none}
+    *,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}
+    .js .reveal{opacity:1;transform:none}
+    .btn-primary:hover{transform:none}
   }
 </style>
 </head>
 <body>
 
+<!-- Inline icon set (Lucide, ISC licence). Referenced with <use> below. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-apple" viewBox="0 0 384 512"><path fill="currentColor" d="M318.7 268c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-92.6zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></symbol>
+    <symbol id="i-github" viewBox="0 0 496 512"><path fill="currentColor" d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8z"/></symbol>
+    <symbol id="i-linkedin" viewBox="0 0 448 512"><path fill="currentColor" d="M100.3 448H7.4V148.9h92.9zM53.8 108.1C24.1 108.1 0 83.5 0 53.8a53.8 53.8 0 0 1 107.6 0c0 29.7-24.1 54.3-53.8 54.3zM447.9 448h-92.7V302.4c0-34.7-.7-79.2-48.3-79.2-48.3 0-55.7 37.7-55.7 76.7V448h-92.8V148.9h89.1v40.8h1.3c12.4-23.5 42.7-48.3 87.9-48.3 94 0 111.3 61.9 111.3 142.3V448z"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-rotate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></symbol>
+    <symbol id="i-alarm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/></symbol>
+    <symbol id="i-crown" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+    <symbol id="i-timer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></symbol>
+    <symbol id="i-hourglass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-wifi-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.643"/><path d="M22 8.82a15 15 0 0 0-11.288-3.764"/><path d="m2 2 20 20"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></symbol>
+    <!-- A classic meeple pawn silhouette, filled per colour in the strip below. -->
+    <symbol id="meeple" viewBox="0 0 100 100"><path d="M50 4c-11 0-19 8-19 18.5 0 6 2.7 11.3 7 14.7C24 39.4 8 45.6 6 54c-1.3 5.4 4 8.5 12 8.5 4 0 8-.8 11-1.9L19 89.5c-1 3.4 1.2 6.5 4.6 6.5h19c2.8 0 5-1.9 5.6-4.6L50 81l1.8 10.4c.6 2.7 2.8 4.6 5.6 4.6h19c3.4 0 5.6-3.1 4.6-6.5L71 60.6c3 1.1 7 1.9 11 1.9 8 0 13.3-3.1 12-8.5-2-8.4-18-14.6-32-16.8 4.3-3.4 7-8.7 7-14.7C69 12 61 4 50 4z"/></symbol>
+    <linearGradient id="mg0" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9FD8FF"/><stop offset="1" stop-color="#3B9EFF"/></linearGradient>
+    <linearGradient id="mg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFA3A3"/><stop offset="1" stop-color="#FF4D4D"/></linearGradient>
+    <linearGradient id="mg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF3A3"/><stop offset="1" stop-color="#FFD60A"/></linearGradient>
+    <linearGradient id="mg3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9F6CA"/><stop offset="1" stop-color="#34D399"/></linearGradient>
+    <linearGradient id="mg4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E0B3FF"/><stop offset="1" stop-color="#A855F7"/></linearGradient>
+    <linearGradient id="mg5" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6B7280"/><stop offset="1" stop-color="#1F2328"/></linearGradient>
+    <linearGradient id="mg6" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFAFDD"/><stop offset="1" stop-color="#FF5CA8"/></linearGradient>
+    <linearGradient id="mg7" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFD199"/><stop offset="1" stop-color="#FF9F1C"/></linearGradient>
+    <linearGradient id="mg8" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#A0F0E8"/><stop offset="1" stop-color="#14C7BE"/></linearGradient>
+    <linearGradient id="mg9" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#D8DCE0"/></linearGradient>
+  </defs>
+</svg>
+
+<a class="skip" href="#main">Skip to content</a>
+
 <header>
   <div class="wrap nav">
-    <img src="assets/icon-180.png" alt="">
-    <strong>Meeple Clock</strong>
-    <nav>
+    <a class="brand" href="#top" aria-label="Meeple Clock, back to top">
+      <img src="assets/icon-180.png" alt="" width="32" height="32">
+      <span>Meeple Clock</span>
+    </a>
+    <nav class="nav-links" aria-label="Sections">
       <a href="#features">Features</a>
-      <a href="#modes" class="hide-sm">Modes</a>
+      <a href="#modes">Modes</a>
       <a href="#screenshots">Screenshots</a>
-      <a href="#developer" class="hide-sm">Developer</a>
+      <a href="#developer">Developer</a>
     </nav>
+    <a class="btn btn-primary btn-sm" href="https://apps.apple.com/app/id6787948106">
+      <svg aria-hidden="true"><use href="#i-apple"/></svg>Get the app
+    </a>
   </div>
 </header>
 
-<main>
+<main id="main">
 
 <!-- ============ HERO ============ -->
-<section class="hero">
-  <div class="wrap">
-    <img class="icon" src="assets/icon-512.png"
-         alt="Meeple Clock app icon: a four-colour radial pie with a silver-ringed clock at its centre">
-    <h1>Meeple Clock</h1>
-    <p class="tagline">A chess clock for the whole table.</p>
-    <p class="lede">
-      Put your iPhone flat in the middle of the board. Every player gets their own
-      glowing wedge of the screen — tap yours to pass the turn, and settle once and
-      for all who is taking forever.
-    </p>
-
-    <div class="cta">
-      <a class="btn btn-primary" href="https://apps.apple.com/app/id6787948106">
-        <svg viewBox="0 0 384 512" aria-hidden="true"><path d="M318.7 268c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-92.6zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
-        Download on the App Store
-      </a>
-      <a class="btn btn-secondary" href="https://github.com/ozSoffySwift/MeepleClock">
-        <svg viewBox="0 0 496 512" aria-hidden="true"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8z"/></svg>
-        View on GitHub
-      </a>
+<section class="hero" id="top" aria-labelledby="hero-title">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">
+        <img src="assets/icon-180.png" alt="" width="28" height="28">
+        Board game timer for iPhone
+      </span>
+      <h1 id="hero-title">A chess clock for <span class="grad">the whole table.</span></h1>
+      <p class="lede">
+        Put your iPhone flat in the middle of the board. Every player gets their own
+        glowing wedge of the screen — tap yours to pass the turn, and settle once and
+        for all who is taking forever.
+      </p>
+      <div class="cta">
+        <a class="btn btn-primary" href="https://apps.apple.com/app/id6787948106">
+          <svg aria-hidden="true"><use href="#i-apple"/></svg>Download on the App Store
+        </a>
+        <a class="btn btn-ghost" href="#screenshots">See it in action</a>
+      </div>
+      <ul class="facts" aria-label="At a glance">
+        <li><svg aria-hidden="true"><use href="#i-users"/></svg>1–6 players</li>
+        <li><svg aria-hidden="true"><use href="#i-wifi-off"/></svg>Plays offline</li>
+        <li><svg aria-hidden="true"><use href="#i-phone"/></svg>Free · iOS 17+</li>
+      </ul>
     </div>
-    <p class="kicker">Free &middot; Plays offline &middot; iPhone, iOS 17+</p>
 
-    <div class="phones">
-      <img src="assets/screens/01-home.png" alt="Meeple Clock home screen with a list of recent games">
-      <img src="assets/screens/03-active-game.png" alt="A four-player game in progress, each player filling a coloured quarter of the screen">
-      <img src="assets/screens/04-results.png" alt="Results screen showing each player's total time with a crown on the fastest">
+    <div class="hero-phones">
+      <img class="phone phone-back" src="assets/screens/05-countdown.png" width="660" height="1434"
+           alt="A four-player Countdown game, each player's time bank draining in their own coloured quarter">
+      <img class="phone phone-front" src="assets/screens/03-active-game.png" width="660" height="1434"
+           alt="A four-player game in progress: the active player's blue wedge glows while the centre shows the turn clock">
     </div>
   </div>
 </section>
 
-<!-- ============ FEATURES ============ -->
-<section id="features">
-  <div class="wrap">
-    <h2>Built for the table, not for your pocket</h2>
-    <p class="sub">
-      Everything is sized to be read and tapped by six people sitting around a phone
-      lying flat on the board.
-    </p>
+<!-- The ten meeple colours a player can pick, as a decorative band. -->
+<div class="meeples wrap" aria-hidden="true">
+  <svg viewBox="0 0 100 100"><use href="#meeple" fill="url(#mg0)"/></svg>
+  <svg viewBox="0 0 100 100"><use href="#meeple" fill="url(#mg1)"/></svg>
+  <svg viewBox="0 0 100 100"><use href="#meeple" fill="url(#mg2)"/></svg>
+  <svg viewBox="0 0 100 100"><use href="#meeple" fill="url(#mg3)"/></svg>
+  <svg viewBox="0 0 100 100"><use href="#meeple" fill="url(#mg4)"/></svg>
+  <svg viewBox="0 0 100 100"><use href="#meeple" fill="url(#mg5)" stroke="#3a3d42" stroke-width="2"/></svg>
+  <svg viewBox="0 0 100 100"><use href="#meeple" fill="url(#mg6)"/></svg>
+  <svg viewBox="0 0 100 100"><use href="#meeple" fill="url(#mg7)"/></svg>
+  <svg viewBox="0 0 100 100"><use href="#meeple" fill="url(#mg8)"/></svg>
+  <svg viewBox="0 0 100 100"><use href="#meeple" fill="url(#mg9)"/></svg>
+</div>
 
-    <div class="grid">
-      <div class="card">
-        <div class="chip">🎲</div>
+<!-- ============ PROBLEM ============ -->
+<section class="problem" aria-label="Why Meeple Clock">
+  <div class="wrap">
+    <blockquote class="reveal">
+      Every game night has one player who takes three times as long as everyone else.
+      <em>Now you have the receipts.</em>
+    </blockquote>
+  </div>
+</section>
+
+<!-- ============ FEATURES (bento) ============ -->
+<section id="features" aria-labelledby="features-title">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="kicker">Features</span>
+      <h2 id="features-title">Built for the table, not your pocket</h2>
+      <p>Everything is sized to be read and tapped by six people sitting around a phone lying flat on the board.</p>
+    </div>
+
+    <div class="bento">
+      <article class="tile tile-hero reveal">
+        <div class="icon i-blue"><svg aria-hidden="true"><use href="#i-rotate"/></svg></div>
+        <h3>One tap passes the turn</h3>
+        <p>Only the active player's wedge responds, so nobody ends someone else's turn by leaning
+           on the screen. Two-player games split into facing halves instead.</p>
+        <img class="shot" src="assets/screens/03-active-game.png" width="660" height="1434" loading="lazy" decoding="async"
+             alt="">
+      </article>
+
+      <article class="tile reveal">
+        <div class="icon i-green"><svg aria-hidden="true"><use href="#i-users"/></svg></div>
         <h3>Up to 6 players</h3>
-        <p>Each gets a name and one of ten gradient meeple colours. Drag the seats into the
-           order you are actually sitting in, and pick who starts — or let the app roll for it.</p>
-      </div>
-      <div class="card">
-        <div class="chip">⏱️</div>
-        <h3>One tap to pass the turn</h3>
-        <p>Only the active player's wedge is tappable, so nobody can end someone else's turn
-           by leaning on the screen. Two-player games split into two facing halves instead.</p>
-      </div>
-      <div class="card">
-        <div class="chip">🚨</div>
-        <h3>A per-turn limit with teeth</h3>
-        <p>Set anything from 10 seconds to 5 minutes. Go over and your clock turns red,
-           double-beeps and buzzes — gentle public shaming, exactly as intended.</p>
-      </div>
-      <div class="card">
-        <div class="chip">👑</div>
+        <p>Names, ten meeple colours, drag-to-reorder seats, and a random first player.</p>
+        <div class="seats" aria-hidden="true">
+          <span style="background:var(--g-blue)"></span><span style="background:var(--g-red)"></span>
+          <span style="background:var(--g-yellow)"></span><span style="background:var(--g-green)"></span>
+          <span style="background:var(--g-purple)"></span><span style="background:var(--g-orange)"></span>
+        </div>
+      </article>
+
+      <article class="tile reveal">
+        <div class="icon i-red"><svg aria-hidden="true"><use href="#i-alarm"/></svg></div>
+        <h3>A turn limit with teeth</h3>
+        <p>10 seconds to 5 minutes. Go over and your clock turns red, double-beeps and buzzes.</p>
+      </article>
+
+      <article class="tile reveal">
+        <div class="icon i-yellow"><svg aria-hidden="true"><use href="#i-crown"/></svg></div>
         <h3>Results worth arguing about</h3>
-        <p>A crown for the fastest player, every total side by side, and a plain-text summary
-           you can drop straight into the group chat.</p>
-      </div>
-      <div class="card">
-        <div class="chip">📊</div>
-        <h3>Game history that sticks around</h3>
-        <p>Every finished game is saved on your phone — name, date, rounds and per-player
-           times — and browsable later from the Statistics tab.</p>
-      </div>
-      <div class="card">
-        <div class="chip">↩️</div>
+        <p>A crown for the fastest player, and a summary ready for the group chat.</p>
+      </article>
+
+      <article class="tile reveal">
+        <div class="icon i-purple"><svg aria-hidden="true"><use href="#i-undo"/></svg></div>
         <h3>Forgiving in the moment</h3>
-        <p>Pause and resume, a one-level undo for the inevitable mis-tap, a whole-game clock
-           and a round counter running the entire time.</p>
-      </div>
-      <div class="card">
-        <div class="chip">⚡</div>
+        <p>Pause, resume, and a one-level undo for the inevitable mis-tap.</p>
+      </article>
+
+      <article class="tile tile-wide reveal">
+        <div class="row">
+          <div class="icon i-teal"><svg aria-hidden="true"><use href="#i-chart"/></svg></div>
+          <div>
+            <h3>Game history that sticks around</h3>
+            <p>Every finished game is saved on your phone — name, date, rounds and each player's
+               time — and browsable later from the Statistics tab, alongside a whole-game clock
+               and round counter while you play.</p>
+          </div>
+        </div>
+      </article>
+
+      <article class="tile reveal">
+        <div class="icon i-orange"><svg aria-hidden="true"><use href="#i-zap"/></svg></div>
         <h3>Quick Timer</h3>
-        <p>Already know the drill? Start a 1–6 player game on your saved defaults in two
-           taps, no setup screen in the way.</p>
-      </div>
-      <div class="card">
-        <div class="chip">🌙</div>
+        <p>Start a 1–6 player game on your saved defaults in two taps.</p>
+      </article>
+
+      <article class="tile reveal">
+        <div class="icon i-pink"><svg aria-hidden="true"><use href="#i-moon"/></svg></div>
         <h3>Made for dim game nights</h3>
-        <p>A fixed dark, silver-accented theme, hand-drawn meeple pawns, and an option to
-           keep the screen awake so the phone never sleeps mid-turn.</p>
-      </div>
+        <p>A dark theme, hand-drawn meeples, and keep-screen-awake.</p>
+      </article>
     </div>
   </div>
 </section>
 
 <!-- ============ MODES ============ -->
-<section id="modes">
+<section id="modes" aria-labelledby="modes-title">
   <div class="wrap">
-    <h2>Two ways to run the clock</h2>
-    <p class="sub">Pick the mode when you set the game up. The per-turn limit works in both.</p>
+    <div class="section-head reveal">
+      <span class="kicker">Two modes</span>
+      <h2 id="modes-title">Count up, or count down</h2>
+      <p>Pick when you set the game up. The per-turn limit works in both.</p>
+    </div>
 
     <div class="modes">
-      <div class="mode up">
-        <p class="label">Mode one</p>
-        <h3>Stopwatch</h3>
-        <p>Every player's clock simply counts up. No limits, no pressure — you are just
-           keeping score of who thinks the longest.</p>
+      <article class="mode up reveal">
+        <div class="mode-head">
+          <div class="icon i-blue"><svg aria-hidden="true"><use href="#i-timer"/></svg></div>
+          <div><span class="tag">Mode one</span><h3>Stopwatch</h3></div>
+        </div>
+        <p>Every player's clock simply counts up. No limits, no pressure — just a scoreboard of
+           who thinks the longest.</p>
         <ul>
-          <li>Nobody can run out of time</li>
-          <li>Best for co-ops and long euros</li>
-          <li>Answers "who is the AP player?" for good</li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg>Nobody can run out of time</li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg>Best for co-ops and long euros</li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg>Settles "who is the slow one?" for good</li>
         </ul>
-      </div>
-      <div class="mode down">
-        <p class="label">Mode two</p>
-        <h3>Countdown</h3>
-        <p>Each player gets a fixed time bank — 30 minutes by default, anywhere from 5 to
-           180 — that drains while they think.</p>
+      </article>
+
+      <article class="mode down reveal">
+        <div class="mode-head">
+          <div class="icon i-red"><svg aria-hidden="true"><use href="#i-hourglass"/></svg></div>
+          <div><span class="tag">Mode two</span><h3>Countdown</h3></div>
+        </div>
+        <p>Each player gets a time bank — 30 minutes by default, anywhere from 5 to 180 — that
+           drains while they think.</p>
         <ul>
-          <li>Running out is <em>soft</em>: the clock goes negative in red and alarms once</li>
-          <li>Nobody is eliminated, no turn is auto-passed — the table decides what it means</li>
-          <li>Results show how much time each player had left</li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg>Running out is soft: the clock goes negative in red and alarms once</li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg>Nobody is eliminated — the table decides what it means</li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg>Results show how much time each player had left</li>
         </ul>
-      </div>
+      </article>
     </div>
   </div>
 </section>
 
 <!-- ============ HOW IT WORKS ============ -->
-<section id="how">
+<section id="how" aria-labelledby="how-title">
   <div class="wrap">
-    <h2>Three taps to a timed game</h2>
-    <div class="steps">
-      <div>
-        <div class="step-n">1</div>
-        <h3>Set the table</h3>
-        <p>Add your players, name the game, choose Stopwatch or Countdown and a per-turn
-           limit.</p>
-      </div>
-      <div>
-        <div class="step-n">2</div>
-        <h3>Phone in the middle</h3>
-        <p>Lay it flat on the board. Everyone's wedge points at them; the active one glows
-           and pulses.</p>
-      </div>
-      <div>
-        <div class="step-n">3</div>
-        <h3>Tap and play</h3>
-        <p>Finish your turn, tap your own wedge, and the clock passes clockwise to the next
-           player.</p>
-      </div>
+    <div class="section-head reveal">
+      <span class="kicker">How it works</span>
+      <h2 id="how-title">Three steps to a timed game</h2>
     </div>
+    <ol class="steps">
+      <li class="reveal"><h3>Set the table</h3><p>Add players, name the game, and choose Stopwatch or Countdown and a turn limit.</p></li>
+      <li class="reveal"><h3>Phone in the middle</h3><p>Lay it flat on the board. Everyone's wedge points at them; the active one glows.</p></li>
+      <li class="reveal"><h3>Tap and play</h3><p>Finish your turn, tap your own wedge, and the clock passes clockwise.</p></li>
+    </ol>
   </div>
 </section>
 
 <!-- ============ SCREENSHOTS ============ -->
-<section id="screenshots">
+<section id="screenshots" aria-labelledby="shots-title">
   <div class="wrap">
-    <h2>A look around</h2>
-    <p class="sub">Five screens, from setup to the post-game autopsy.</p>
+    <div class="section-head reveal">
+      <span class="kicker">Screenshots</span>
+      <h2 id="shots-title">From setup to the post&#8209;game autopsy</h2>
+    </div>
 
-    <div class="gallery">
-      <figure class="shot">
-        <img src="assets/screens/01-home.png" alt="Home screen with a New Timer button and a list of recent games">
-        <p>Home — start fresh or revisit a recent game</p>
-      </figure>
-      <figure class="shot">
-        <img src="assets/screens/02-player-setup.png" alt="Player setup screen with mode chips, player count, four named players and time settings">
-        <p>Setup — players, mode, time bank and turn limit</p>
-      </figure>
-      <figure class="shot">
-        <img src="assets/screens/03-active-game.png" alt="Four-player radial timer with the active player's wedge highlighted">
-        <p>Live game — the active wedge glows, the centre shows the turn clock</p>
-      </figure>
-      <figure class="shot">
-        <img src="assets/screens/05-countdown.png" alt="A countdown game in progress with all four clocks counting down">
-        <p>Countdown — every bank draining in real time</p>
-      </figure>
-      <figure class="shot">
-        <img src="assets/screens/04-results.png" alt="Results screen with a crown next to the fastest player and a share button">
-        <p>Results — a crown, the totals, and a shareable summary</p>
-      </figure>
+    <div class="carousel">
+      <div class="track" id="track" tabindex="0" role="region" aria-label="App screenshots, scroll horizontally">
+        <figure>
+          <img src="assets/screens/01-home.png" width="660" height="1434" loading="lazy" decoding="async"
+               alt="Home screen with a New Timer button and a list of recent games">
+          <figcaption><strong>Home</strong><span>Start fresh or revisit a recent game</span></figcaption>
+        </figure>
+        <figure>
+          <img src="assets/screens/02-player-setup.png" width="660" height="1434" loading="lazy" decoding="async"
+               alt="Player setup with Stopwatch and Countdown chips, four named players and time settings">
+          <figcaption><strong>Setup</strong><span>Players, mode, time bank and turn limit</span></figcaption>
+        </figure>
+        <figure>
+          <img src="assets/screens/03-active-game.png" width="660" height="1434" loading="lazy" decoding="async"
+               alt="Four-player radial timer with the active player's wedge highlighted">
+          <figcaption><strong>Live game</strong><span>The active wedge glows; the centre keeps time</span></figcaption>
+        </figure>
+        <figure>
+          <img src="assets/screens/05-countdown.png" width="660" height="1434" loading="lazy" decoding="async"
+               alt="A countdown game in progress with all four clocks counting down">
+          <figcaption><strong>Countdown</strong><span>Every bank draining in real time</span></figcaption>
+        </figure>
+        <figure>
+          <img src="assets/screens/04-results.png" width="660" height="1434" loading="lazy" decoding="async"
+               alt="Results screen with a crown next to the fastest player and a share button">
+          <figcaption><strong>Results</strong><span>A crown, the totals, and a shareable summary</span></figcaption>
+        </figure>
+      </div>
+      <div class="carousel-controls">
+        <button type="button" id="prev" aria-controls="track" aria-label="Previous screenshots">
+          <svg aria-hidden="true"><use href="#i-left"/></svg>
+        </button>
+        <button type="button" id="next" aria-controls="track" aria-label="Next screenshots">
+          <svg aria-hidden="true"><use href="#i-right"/></svg>
+        </button>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- ============ ABOUT THE APP ============ -->
-<section id="about">
+<!-- ============ ABOUT + DEVELOPER ============ -->
+<section id="developer" aria-labelledby="about-title">
   <div class="wrap">
-    <h2>About the app</h2>
-    <p class="sub">
-      Meeple Clock started as a small annoyance at a game night — one player who always
-      took three times as long as everyone else, and no way to prove it. It is now a
-      native iPhone app, hand-built in SwiftUI, with a fixed dark theme and a set of
-      meeple pawns drawn from scratch.
-    </p>
-
-    <dl class="specs">
-      <div><dt>Platform</dt><dd>iPhone, iOS 17.0 or later</dd></div>
-      <div><dt>Current version</dt><dd>1.1 — adds Countdown mode and redrawn meeples</dd></div>
-      <div><dt>Price</dt><dd>Free</dd></div>
-      <div><dt>Players supported</dt><dd>1 to 6</dd></div>
-      <div><dt>Modes</dt><dd>Stopwatch (count up) and Countdown (per-player time bank)</dd></div>
-      <div><dt>Built with</dt><dd>Swift and SwiftUI, SwiftData for saved games, no UIKit</dd></div>
-      <div><dt>Internet connection</dt><dd>Not required to play</dd></div>
-      <div><dt>Source code</dt><dd><a href="https://github.com/ozSoffySwift/MeepleClock">github.com/ozSoffySwift/MeepleClock</a></dd></div>
-    </dl>
-  </div>
-</section>
-
-<!-- ============ PRIVACY ============ -->
-<section id="privacy">
-  <div class="wrap">
-    <div class="privacy-note">
-      <h2>Your game night stays yours</h2>
-      <p class="sub" style="margin-bottom:22px">
-        Player names, game names and your entire saved history live on your device and are
-        never transmitted anywhere. The app reports anonymous usage statistics — which
-        screens get opened, how many players a game had — and none of what you type is in
-        them. No accounts, no tracking, no advertising identifier.
-      </p>
-      <a class="btn btn-secondary" href="privacy.html">Read the privacy policy</a>
+    <div class="section-head reveal">
+      <span class="kicker">About</span>
+      <h2 id="about-title">One developer, far too many board games</h2>
     </div>
-  </div>
-</section>
 
-<!-- ============ DEVELOPER ============ -->
-<section id="developer">
-  <div class="wrap">
-    <h2>Who made this</h2>
-    <p class="sub">One developer, one app, far too many board games.</p>
+    <div class="about-grid">
+      <div class="panel reveal">
+        <h3>About the app</h3>
+        <p>A native iPhone app, hand-built in SwiftUI, with a fixed dark theme and meeple pawns drawn from scratch.</p>
+        <dl class="specs">
+          <div><dt>Platform</dt><dd>iPhone, iOS 17.0 or later</dd></div>
+          <div><dt>Version</dt><dd>1.1 — Countdown mode and redrawn meeples</dd></div>
+          <div><dt>Price</dt><dd>Free</dd></div>
+          <div><dt>Players</dt><dd>1 to 6</dd></div>
+          <div><dt>Internet</dt><dd>Not required to play</dd></div>
+          <div><dt>Built with</dt><dd>Swift, SwiftUI and SwiftData</dd></div>
+        </dl>
+      </div>
 
-    <div class="dev">
-      <div class="avatar">OS</div>
-      <div>
-        <h3>Oz Soffy</h3>
-        <p class="role">iOS developer &middot; Designer &middot; Board gamer</p>
-        <p>
-          Meeple Clock is designed, built, drawn and shipped by Oz Soffy. It is written in
-          pure SwiftUI — no UIKit view controllers anywhere — with a drift-free timer engine
-          built on date maths rather than accumulated ticks, so the clocks stay honest even
-          over a four-hour game of Twilight Imperium.
-        </p>
-        <p>
-          The whole project is open source: the code, the design history, and the marketing
-          assets are all on GitHub. Bug reports and feature requests are welcome there.
-        </p>
+      <div class="panel dev reveal">
+        <div class="dev-top">
+          <div class="avatar" aria-hidden="true">OS</div>
+          <div>
+            <h3>Oz Soffy</h3>
+            <p class="role">iOS developer · Designer · Board gamer</p>
+          </div>
+        </div>
+        <p>Meeple Clock is designed, built, drawn and shipped by Oz Soffy. Its timer engine runs on
+           date maths rather than accumulated ticks, so the clocks stay honest even over a
+           four-hour game of Twilight Imperium.</p>
+        <p>The whole project is open source — code, design history and marketing assets. Bug
+           reports and feature requests are welcome on GitHub.</p>
         <div class="links">
-          <a href="https://www.linkedin.com/in/ozsoffy/">
-            <svg viewBox="0 0 448 512" aria-hidden="true"><path d="M100.3 448H7.4V148.9h92.9zM53.8 108.1C24.1 108.1 0 83.5 0 53.8a53.8 53.8 0 0 1 107.6 0c0 29.7-24.1 54.3-53.8 54.3zM447.9 448h-92.7V302.4c0-34.7-.7-79.2-48.3-79.2-48.3 0-55.7 37.7-55.7 76.7V448h-92.8V148.9h89.1v40.8h1.3c12.4-23.5 42.7-48.3 87.9-48.3 94 0 111.3 61.9 111.3 142.3V448z"/></svg>
-            LinkedIn
+          <a class="btn btn-ghost btn-sm" href="https://www.linkedin.com/in/ozsoffy/">
+            <svg aria-hidden="true"><use href="#i-linkedin"/></svg>LinkedIn
           </a>
-          <a href="https://github.com/ozSoffySwift">
-            <svg viewBox="0 0 496 512" aria-hidden="true"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8z"/></svg>
-            GitHub
+          <a class="btn btn-ghost btn-sm" href="https://github.com/ozSoffySwift/MeepleClock">
+            <svg aria-hidden="true"><use href="#i-github"/></svg>Source on GitHub
           </a>
         </div>
       </div>
+    </div>
+
+    <div class="privacy reveal">
+      <div class="icon i-green"><svg aria-hidden="true"><use href="#i-shield"/></svg></div>
+      <div>
+        <h3>Your game night stays yours</h3>
+        <p>Player names, game names and your saved history never leave your device. No accounts,
+           and nothing you type is ever sent anywhere.</p>
+      </div>
+      <a class="btn btn-ghost btn-sm" href="privacy.html">Privacy policy</a>
     </div>
   </div>
 </section>
 
 <!-- ============ FINAL CTA ============ -->
-<section id="get">
-  <div class="wrap" style="text-align:center">
-    <h2>Settle it tonight</h2>
-    <p class="sub">Free on the App Store. Works on any iPhone running iOS 17 or later.</p>
-    <div class="cta">
-      <a class="btn btn-primary" href="https://apps.apple.com/app/id6787948106">
-        <svg viewBox="0 0 384 512" aria-hidden="true"><path d="M318.7 268c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-92.6zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
-        Download on the App Store
-      </a>
+<section class="final-wrap" aria-labelledby="final-title">
+  <div class="wrap">
+    <div class="final reveal">
+      <img src="assets/icon-180.png" width="96" height="96" alt="" loading="lazy">
+      <h2 id="final-title">Settle it tonight</h2>
+      <p>Free on the App Store, for any iPhone running iOS 17 or later.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="https://apps.apple.com/app/id6787948106">
+          <svg aria-hidden="true"><use href="#i-apple"/></svg>Download on the App Store
+        </a>
+      </div>
     </div>
   </div>
 </section>
@@ -566,19 +765,78 @@
 
 <footer>
   <div class="wrap">
-    <nav>
+    <nav aria-label="Footer">
       <a href="#features">Features</a>
       <a href="#screenshots">Screenshots</a>
       <a href="privacy.html">Privacy</a>
       <a href="https://github.com/ozSoffySwift/MeepleClock">GitHub</a>
       <a href="https://www.linkedin.com/in/ozsoffy/">LinkedIn</a>
     </nav>
-    <p>
-      &copy; 2026 Oz Soffy. Meeple Clock is not affiliated with any board game publisher.<br>
-      Apple, iPhone and App Store are trademarks of Apple Inc.
-    </p>
+    <p>© 2026 Oz Soffy · Not affiliated with any board game publisher.<br>
+       Apple, iPhone and App Store are trademarks of Apple Inc.</p>
   </div>
 </footer>
 
+<script>
+  // Progressive enhancement only — the page is complete without this script.
+  document.documentElement.classList.add('js');
+
+  // Scroll reveal. Skipped entirely under reduced motion or without IntersectionObserver.
+  (function () {
+    var els = document.querySelectorAll('.reveal');
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || !('IntersectionObserver' in window)) {
+      els.forEach(function (el) { el.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+    els.forEach(function (el) { io.observe(el); });
+  })();
+
+  // Screenshot carousel buttons: single-pointer and keyboard alternative to swiping.
+  (function () {
+    var track = document.getElementById('track');
+    var prev = document.getElementById('prev');
+    var next = document.getElementById('next');
+    if (!track || !prev || !next) return;
+    var figs = Array.prototype.slice.call(track.querySelectorAll('figure'));
+    var origin = figs[0].offsetLeft;
+    // Snap points are each figure's start edge, so jump to an exact slide index rather than
+    // scrolling by a relative amount: a relative scroll fights mandatory scroll-snap when a
+    // second click lands mid-animation and stalls.
+    function current() {
+      var x = track.scrollLeft, best = 0;
+      figs.forEach(function (f, i) {
+        if (Math.abs(f.offsetLeft - origin - x) < Math.abs(figs[best].offsetLeft - origin - x)) best = i;
+      });
+      return best;
+    }
+    // Rapid clicks chain from the slide the previous click is heading to; once a click is
+    // older than the scroll animation, start again from wherever the track actually is
+    // (it may have been swiped, or a smooth scroll may not have moved it at all).
+    var target = 0, lastGo = 0;
+    function go(dir) {
+      var from = Date.now() - lastGo < 450 ? target : current();
+      target = Math.max(0, Math.min(figs.length - 1, from + dir));
+      lastGo = Date.now();
+      track.scrollTo({ left: figs[target].offsetLeft - origin, behavior: 'smooth' });
+    }
+    function update() {
+      var max = track.scrollWidth - track.clientWidth - 2;
+      prev.disabled = track.scrollLeft <= 2;
+      next.disabled = track.scrollLeft >= max;
+      prev.parentElement.style.display = max <= 0 ? 'none' : '';
+    }
+    prev.addEventListener('click', function () { go(-1); });
+    next.addEventListener('click', function () { go(1); });
+    track.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+  })();
+</script>
 </body>
 </html>

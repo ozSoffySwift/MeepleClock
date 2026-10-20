@@ -1,8 +1,10 @@
 # Marketing site & app-ads.txt — setup checklist
 
 The marketing site lives in [`docs/`](../docs) and is designed to be served by GitHub Pages
-straight from `main`. Nothing needs building: it is plain HTML, CSS and PNGs, with no
-JavaScript and no external requests.
+straight from `main`. Nothing needs building: it is plain HTML, CSS and PNGs. The only
+external request is Google Fonts (Fredoka and Nunito), and the only JavaScript is a small
+inline script for scroll reveals and the screenshot carousel buttons — the page is complete
+without it.
 
 ```
 docs/
